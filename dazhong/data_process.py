@@ -5,6 +5,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.metrics import confusion_matrix
+from sklearn.metrics import roc_auc_score
 import jieba
 import os
 import sys
@@ -64,7 +65,9 @@ def feature_extraction(data,stopwords):
 def train_model(x_train,y_train,x_test,y_test):
     classifier=MultinomialNB()
     classifier.fit(x_train,y_train)
-    #print(classifier.score(x_test,y_test))
+    print("accuracy",classifier.score(x_test,y_test))
+    predict_y=classifier.predict(x_test)
+    print("roc-score",roc_auc_score(y_test,predict_y))
     return classifier #返回模型
 
 #预测
@@ -85,15 +88,14 @@ if __name__ == '__main__':
     for i, label in enumerate(y_train):
         if label==0:
             samples0.append(x_train_tf[i])
-    s=smote.Smote(np.array(samples0),N=100)
+    s=smote.Smote(np.array(samples0),N=600)
     over_samplings_x=s.over_sampling()
     total_samplings_x=np.row_stack((x_train_tf,over_samplings_x))
-    total_samplings_y=np.row_stack((y_train,np.zeros((len(over_samplings_x),1))))
-    print(total_samplings_x.shape)
-    print(total_samplings_y.shape)
-#     model=train_model(x_train_tf, y_train,tf.transform(fenci(x_test)),y_test)
-#     y_predict=model.predict(tf.transform(fenci((x_test))))
-#     comment1="一如既往的好。已经快成了陆家嘴上班的我的食堂了。满减活动非常给力，上次叫了八样东西，折扣下来居然就六十左右，吃得好爽好爽。南瓜吃过几次，就一次不够酥烂，其他几次都很好。烤麸非常入味，适合上海人。鱼香肉丝有点辣，下饭刚好。那个蔬菜每次都点。总体很好吃。"
-#     comment2="糯米外皮不绵滑，豆沙馅粗躁，没有香甜味。12元一碗不值。"
-#     print(predict(model,pd.Series([comment1]) , tf))
-#     print(predict(model,pd.Series([comment2]), tf))
+    total_samplings_y=np.concatenate((y_train,np.zeros(len(over_samplings_x))),axis=0)
+    #model=train_model(x_train_tf, y_train,tf.transform(fenci(x_test)),y_test)
+    model=train_model(total_samplings_x, total_samplings_y,tf.transform(fenci(x_test)),y_test)
+    y_predict=model.predict(tf.transform(fenci((x_test))))
+    comment1="一如既往的好。已经快成了陆家嘴上班的我的食堂了。满减活动非常给力，上次叫了八样东西，折扣下来居然就六十左右，吃得好爽好爽。南瓜吃过几次，就一次不够酥烂，其他几次都很好。烤麸非常入味，适合上海人。鱼香肉丝有点辣，下饭刚好。那个蔬菜每次都点。总体很好吃。"
+    comment2="糯米外皮不绵滑，豆沙馅粗躁，没有香甜味。12元一碗不值。"
+    print(predict(model,pd.Series([comment1]) , tf))
+    print(predict(model,pd.Series([comment2]), tf))
